@@ -1,6 +1,6 @@
 import { transcribe } from "ai";
 import { xai } from "@ai-sdk/xai";
-import { aiErrorMessage } from "@/lib/ai";
+import { aiErrorMessage, errorDetail } from "@/lib/ai";
 
 export const maxDuration = 60;
 
@@ -44,12 +44,7 @@ export async function POST(req: Request) {
     // outright (WAV among them). Say so plainly — it is the one failure here
     // that depends on which browser the learner happens to be using. The
     // detail lives in responseBody, not in the error message ("Bad Request").
-    const body =
-      typeof err === "object" && err !== null && "responseBody" in err
-        ? String((err as { responseBody?: unknown }).responseBody ?? "")
-        : "";
-    const raw = `${err instanceof Error ? err.message : String(err)} ${body}`;
-    if (/audio format|file header/i.test(raw)) {
+    if (/audio format|file header/i.test(errorDetail(err))) {
       return Response.json(
         {
           error: `This browser records audio as ${contentType}, which the transcriber can't read. Type your answer instead.`,

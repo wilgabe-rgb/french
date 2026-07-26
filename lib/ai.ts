@@ -104,8 +104,25 @@ export const gradeSchema = z.object({
  * actually go wrong are: no credentials, no card on the Vercel account, and
  * rate limits — and each needs a different fix from the person running this.
  */
+/**
+ * Flatten everything useful out of a thrown provider error: the message, the
+ * HTTP response body (where the API puts the actual reason — the message is
+ * often just "Bad Request"), and the same again for any wrapped cause.
+ */
+export function errorDetail(err: unknown, depth = 0): string {
+  if (!err || typeof err !== "object" || depth > 3) return String(err ?? "");
+  const o = err as Record<string, unknown>;
+  return [
+    typeof o.message === "string" ? o.message : "",
+    typeof o.responseBody === "string" ? o.responseBody : "",
+    o.cause ? errorDetail(o.cause, depth + 1) : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function aiErrorMessage(err: unknown): string {
-  const raw = err instanceof Error ? err.message : String(err);
+  const raw = errorDetail(err);
 
   if (/api key|unauthor|401|invalid.*key|credential/i.test(raw)) {
     return "No valid xAI credentials. Set XAI_API_KEY in .env.local (and in the Vercel project) and restart.";
