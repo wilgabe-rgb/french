@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { currentAccount, type Account } from "@/lib/account";
 import { syncConfigured } from "@/lib/insforge";
-import { restoreSession, type Account } from "@/lib/session";
 
 /**
  * Who is on this device, visible from every page. On a shared laptop the
@@ -20,8 +20,10 @@ export function AccountChip() {
       return;
     }
     let alive = true;
+    // currentAccount only reads. Using restoreSession here would write the
+    // active account back and re-announce the change this handler listens for.
     const read = async () => {
-      const acct = await restoreSession();
+      const acct = await currentAccount();
       if (alive) {
         setAccount(acct);
         setChecked(true);

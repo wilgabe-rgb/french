@@ -70,11 +70,23 @@ export function saveProgress(p: Progress, accountId = activeAccountId()) {
   window.dispatchEvent(new Event("parlons:progress"));
 }
 
-/** Point the app at an account's slot. Pass null when signing out. */
+/**
+ * Point the app at an account's slot. Pass null when signing out.
+ *
+ * Announcing only real changes is load-bearing, not an optimisation: anything
+ * that re-reads the session in response to "parlons:account" would otherwise
+ * set it again, announce again, and spin — with a network call each turn.
+ */
 export function setActiveAccount(accountId: string | null) {
   if (typeof window === "undefined") return;
-  if (accountId) window.localStorage.setItem(ACTIVE, accountId);
+
+  const current = window.localStorage.getItem(ACTIVE);
+  const next = accountId ?? null;
+  if (current === next) return;
+
+  if (next) window.localStorage.setItem(ACTIVE, next);
   else window.localStorage.removeItem(ACTIVE);
+
   window.dispatchEvent(new Event("parlons:account"));
   window.dispatchEvent(new Event("parlons:progress"));
 }
