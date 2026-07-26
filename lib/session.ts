@@ -18,8 +18,16 @@ import { syncProgress } from "./sync";
  * server. Screens call these rather than orchestrating it themselves.
  */
 
+/**
+ * Any trace of having used the app. Corrections count: practising in the
+ * conversation simulator logs mistakes without completing a day or scoring an
+ * item, and that history is exactly what the warm-ups are built from.
+ */
 const hasWork = (p: Progress) =>
-  Object.keys(p.days).length > 0 || Object.keys(p.stats).length > 0;
+  Object.keys(p.days).length > 0 ||
+  Object.keys(p.stats).length > 0 ||
+  p.mistakes.length > 0 ||
+  p.tests.length > 0;
 
 export async function signIn(username: string): Promise<Account> {
   const account = await enterAs(username);
