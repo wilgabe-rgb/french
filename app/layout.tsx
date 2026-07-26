@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { AccountChip } from "@/components/AccountChip";
 import { SyncOnChange } from "@/components/SyncOnChange";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
               <Link href="/progress" className="hover:text-ink">
                 Progress
               </Link>
+              <AccountChip />
             </nav>
           </div>
         </header>

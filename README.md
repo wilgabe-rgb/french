@@ -38,6 +38,28 @@ change `MODEL` in `lib/ai.ts` and install the matching `@ai-sdk/*` package.
 Everything except the AI routes works offline — the curriculum, audio and
 progress tracking are all local.
 
+## Multiple learners
+
+Anyone types a name on the Progress page and starts at day 1 at their own pace.
+Type the same name again — on any device — and you carry on from exactly where
+you stopped. Each learner's days, weak spots, warm-ups and weekly tests are
+built only from their own mistakes; the tables are row-level-security scoped per
+account, so one learner cannot read or write another's.
+
+**There is no password: the name is the login.** Anyone who types your name
+opens your progress, and two people picking the same name share one account.
+That is a deliberate trade for zero friction among people who trust each other —
+don't use it for anything you would mind a housemate reading. A "Use Google
+instead" link is on the same screen for anyone who wants their account locked.
+
+Because the accounts are addressed by name rather than email, sign-up must not
+wait on an emailed code, so `require_email_verification` is off in
+`insforge.toml`. Turning it back on will lock every name-based learner out.
+
+Progress is stored per account in the browser as well as on the server, so two
+people sharing a laptop never inherit each other's day. Work done before signing
+in is adopted only by an account with no history anywhere.
+
 ## Syncing across devices
 
 Optional. Signed out, progress lives in `localStorage` and never leaves the

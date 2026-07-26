@@ -3,23 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { insforge, syncConfigured } from "@/lib/insforge";
 import { loadProgress, saveProgress } from "@/lib/progress";
-import { currentUser, syncProgress } from "@/lib/sync";
+import { syncProgress } from "@/lib/sync";
+import { restoreSession, signIn, signOut, type Account } from "@/lib/session";
 
 type State = "loading" | "out" | "in";
 
 /**
- * Sign in to carry progress between devices. Everything works signed out —
- * this only adds a copy in the cloud, so the failure mode is "not synced",
- * never "lost your place".
- *
- * Google is the only way in. There is no password to forget on a phone you
- * picked up to do ten minutes of French on the train, and Google has already
- * verified the address, so there is no confirmation step standing between
- * signing up and using the app.
+ * Signing in is just a name. There is no password by design, so this is the
+ * whole of it: type who you are and your own days, weak spots and tests follow
+ * you to any device. Everything works signed out too — that work stays on this
+ * device and is carried into the first account used here.
  */
 export function AccountBar() {
   const [state, setState] = useState<State>("loading");
-  const [email, setEmail] = useState("");
+  const [account, setAccount] = useState<Account | null>(null);
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
@@ -32,12 +30,72 @@ export function AccountBar() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!syncConfigured) {
+      setState("out");
+      return;
+    }
+    void (async () => {
+      // Returning from Google is a round-trip, so a first look can honestly
+      // show nobody there; give it a moment before concluding that.
+      const returning =
+        typeof window !== "undefined" &&
+        window.location.search.includes("insforge_code");
+
+      for (let i = 0; i < (returning ? 12 : 1); i++) {
+        const acct = await restoreSession();
+        if (!mounted.current) return;
+        if (acct) {
+          setAccount(acct);
+          setState("in");
+          return;
+        }
+        if (i === 0 && !returning) break;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+      if (mounted.current) setState("out");
+    })();
+  }, []);
+
+  const enter = async () => {
+    if (busy || !name.trim()) return;
+    setBusy(true);
+    setError("");
+    setNote("");
+    try {
+      const acct = await signIn(name);
+      if (!mounted.current) return;
+      setAccount(acct);
+      setState("in");
+      setName("");
+      setNote(`Welcome, ${acct.username}. Your progress is saved to that name.`);
+    } catch (e) {
+      if (mounted.current) {
+        setError(e instanceof Error ? e.message : "Could not sign in.");
+      }
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  };
+
+  const leaveNow = async () => {
+    setBusy(true);
+    try {
+      await signOut();
+      if (!mounted.current) return;
+      setAccount(null);
+      setState("out");
+      setNote("Signed out. Pick a name again to carry on where you left off.");
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  };
+
   const syncNow = useCallback(async () => {
     setError("");
     setNote("Syncing…");
     try {
-      const merged = await syncProgress(loadProgress());
-      saveProgress(merged);
+      saveProgress(await syncProgress(loadProgress()));
       if (mounted.current) setNote("Synced.");
     } catch (e) {
       if (!mounted.current) return;
@@ -46,82 +104,20 @@ export function AccountBar() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!syncConfigured) {
-      setState("out");
-      return;
-    }
-
-    void (async () => {
-      // Coming back from Google, the SDK exchanges the insforge_code in the URL
-      // for a session as it starts up. That is a network round-trip, so the
-      // first look can legitimately show nobody signed in — give it a moment
-      // before concluding the sign-in failed.
-      const returning =
-        typeof window !== "undefined" &&
-        window.location.search.includes("insforge_code");
-
-      for (let attempt = 0; attempt < (returning ? 12 : 1); attempt++) {
-        const user = await currentUser();
-        if (!mounted.current) return;
-        if (user) {
-          setEmail(user.email ?? "");
-          setState("in");
-          void syncNow();
-          return;
-        }
-        if (attempt === 0 && !returning) break;
-        await new Promise((r) => setTimeout(r, 250));
-      }
-
-      if (mounted.current) setState("out");
-    })();
-  }, [syncNow]);
-
-  const signIn = async () => {
+  const withGoogle = async () => {
     const c = insforge();
     if (!c || busy) return;
     setBusy(true);
     setError("");
-    setNote("");
     try {
-      // Land back where they started, so signing in from the progress page
-      // returns to the progress page rather than dumping them at the top.
       const { origin, pathname } = window.location;
       const { error: authError } = await c.auth.signInWithOAuth("google", {
         redirectTo: `${origin}${pathname}`,
         additionalParams: { prompt: "select_account" },
       });
-      // On success the browser has already left for Google; only failures
-      // carry on to here.
-      if (authError) {
-        setError(
-          typeof authError === "object" &&
-            authError &&
-            "message" in authError
-            ? String((authError as { message?: unknown }).message)
-            : "Could not start sign-in.",
-        );
+      if (authError && mounted.current) {
+        setError("Could not start Google sign-in.");
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start sign-in.");
-    } finally {
-      if (mounted.current) setBusy(false);
-    }
-  };
-
-  const signOut = async () => {
-    const c = insforge();
-    if (!c) return;
-    setBusy(true);
-    try {
-      // push whatever is local before losing the session
-      await syncProgress(loadProgress()).catch(() => null);
-      await c.auth.signOut();
-      if (!mounted.current) return;
-      setState("out");
-      setEmail("");
-      setNote("Signed out. Progress stays on this device.");
     } finally {
       if (mounted.current) setBusy(false);
     }
@@ -131,15 +127,18 @@ export function AccountBar() {
 
   return (
     <section className="rounded-2xl border border-line bg-panel p-5">
-      <h2 className="font-medium">Across your devices</h2>
+      <h2 className="font-medium">Who&apos;s learning</h2>
 
-      {state === "loading" && <p className="mt-2 text-sm text-muted">Checking…</p>}
+      {state === "loading" && (
+        <p className="mt-2 text-sm text-muted">Checking…</p>
+      )}
 
-      {state === "in" && (
+      {state === "in" && account && (
         <>
           <p className="mt-1 text-sm text-muted">
-            Signed in{email ? ` as ${email}` : ""}. Your progress is saved to
-            your account as you go.
+            Signed in as{" "}
+            <span className="font-medium text-ink">{account.username}</span>.
+            Everything below is yours alone, on any device.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
@@ -152,11 +151,11 @@ export function AccountBar() {
             </button>
             <button
               type="button"
-              onClick={signOut}
+              onClick={leaveNow}
               disabled={busy}
               className="rounded-lg border border-line px-4 py-2 text-sm text-muted transition hover:border-accent hover:text-accent"
             >
-              Sign out
+              Switch learner
             </button>
           </div>
         </>
@@ -165,47 +164,50 @@ export function AccountBar() {
       {state === "out" && (
         <>
           <p className="mt-1 text-sm text-muted">
-            Optional. Sign in and your days, weak spots and test results follow
-            you to your phone. Without it everything stays on this device.
+            Type your name to start, or to pick up exactly where you left off.
+            No password — if the name has been used before, you carry on from
+            that point.
           </p>
-          <button
-            type="button"
-            onClick={signIn}
-            disabled={busy}
-            className="mt-4 inline-flex items-center gap-3 rounded-lg border border-line bg-bg px-4 py-2 text-sm font-medium transition hover:border-accent disabled:opacity-60"
-          >
-            <GoogleMark />
-            {busy ? "Opening Google…" : "Continue with Google"}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void enter();
+              }}
+              placeholder="your name"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="min-w-0 flex-1 rounded-xl border border-line bg-bg px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+            <button
+              type="button"
+              onClick={enter}
+              disabled={busy || !name.trim()}
+              className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-bg transition hover:opacity-90"
+            >
+              {busy ? "One moment…" : "Start"}
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-muted">
+            Anyone who types your name can open your progress, so use this among
+            people you trust.{" "}
+            <button
+              type="button"
+              onClick={withGoogle}
+              disabled={busy}
+              className="underline underline-offset-4 hover:text-ink"
+            >
+              Use Google instead
+            </button>{" "}
+            if you would rather it were locked.
+          </p>
         </>
       )}
 
       {note && <p className="mt-3 text-sm text-good">{note}</p>}
       {error && <p className="mt-3 text-sm text-bad">{error}</p>}
     </section>
-  );
-}
-
-/** Google's mark, inline so the button works offline and needs no CDN. */
-function GoogleMark() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="#EA4335"
-        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-      />
-      <path
-        fill="#4285F4"
-        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-      />
-      <path
-        fill="#34A853"
-        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-      />
-    </svg>
   );
 }
