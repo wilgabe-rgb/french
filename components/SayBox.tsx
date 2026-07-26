@@ -26,8 +26,8 @@ export function SayBox({
 }: Props) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { listening, start, stop, supported, error } = useMic((heard) =>
-    setText((t) => (t ? `${t} ${heard}` : heard)),
+  const { listening, transcribing, start, stop, supported, error } = useMic(
+    (heard) => setText((t) => (t ? `${t} ${heard}` : heard)),
   );
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export function SayBox({
           <button
             type="button"
             onClick={listening ? stop : start}
-            disabled={disabled}
+            disabled={disabled || transcribing}
             aria-pressed={listening}
             aria-label={listening ? "Stop recording" : "Start speaking"}
             className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border transition ${
@@ -73,7 +73,13 @@ export function SayBox({
             if (e.key === "Enter") send();
           }}
           disabled={disabled}
-          placeholder={listening ? "Listening…" : placeholder}
+          placeholder={
+            listening
+              ? "Listening… tap the mic again when you're done"
+              : transcribing
+                ? "Working out what you said…"
+                : placeholder
+          }
           lang="fr"
           autoComplete="off"
           autoCorrect="off"
@@ -91,14 +97,18 @@ export function SayBox({
       </div>
       {!supported && (
         <p className="text-xs text-muted">
-          Your browser can&apos;t do speech input — say it out loud anyway, then
-          type what you said. Chrome and Edge support the mic.
+          This browser has no microphone access — say it out loud anyway, then
+          type what you said.
         </p>
       )}
-      {error && error !== "unsupported" && (
+      {error === "no-mic-permission" && (
         <p className="text-xs text-bad">
-          Mic problem ({error}). Check the site has microphone permission.
+          The mic is blocked. Allow microphone access for this site, then try
+          again.
         </p>
+      )}
+      {error && error !== "unsupported" && error !== "no-mic-permission" && (
+        <p className="text-xs text-bad">{error}</p>
       )}
     </div>
   );

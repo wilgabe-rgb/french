@@ -78,32 +78,66 @@ function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
     null) as (new () => SpeechRecognitionLike) | null;
 }
 
-export const micAvailable = () => getRecognitionCtor() !== null;
+/** Chrome and Edge transcribe on-device: instant and free. */
+export const nativeMicAvailable = () => getRecognitionCtor() !== null;
+
+/** Everyone else records audio and we send it to Grok to transcribe. */
+export const recorderMicAvailable = () =>
+  typeof window !== "undefined" &&
+  typeof MediaRecorder !== "undefined" &&
+  !!navigator.mediaDevices?.getUserMedia;
+
+export const micAvailable = () =>
+  nativeMicAvailable() || recorderMicAvailable();
+
+/** Ordered by preference — the first one the browser can actually produce wins. */
+const RECORDING_TYPES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+  "audio/ogg;codecs=opus",
+];
+
+function pickRecordingType(): string | undefined {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  return RECORDING_TYPES.find((t) => MediaRecorder.isTypeSupported?.(t));
+}
 
 /**
- * Push-to-talk French dictation. Falls back silently when the browser has no
- * SpeechRecognition (Firefox, most of Safari) — the UI offers typing instead.
+ * Push-to-talk French dictation, on every browser.
+ *
+ * Chrome and Edge use the on-device Web Speech API — no network round trip and
+ * no cost. Firefox, Safari and most mobile browsers have no such API, so there
+ * we record with MediaRecorder and post the audio to /api/transcribe. Same
+ * interface either way; `transcribing` is only ever true on the fallback path.
  */
 export function useMic(onResult: (text: string) => void) {
   const [listening, setListening] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
   const cbRef = useRef(onResult);
   cbRef.current = onResult;
 
+  const releaseStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  }, []);
+
   const stop = useCallback(() => {
-    recRef.current?.stop();
+    if (recRef.current) recRef.current.stop();
+    if (mediaRef.current && mediaRef.current.state === "recording") {
+      mediaRef.current.stop();
+    }
     setListening(false);
   }, []);
 
-  const start = useCallback(() => {
-    const Ctor = getRecognitionCtor();
-    if (!Ctor) {
-      setError("unsupported");
-      return;
-    }
-    setError(null);
-
+  /* ---- path A: on-device recognition (Chrome, Edge) ---- */
+  const startNative = useCallback((Ctor: new () => SpeechRecognitionLike) => {
     const rec = new Ctor();
     rec.lang = "fr-FR";
     rec.continuous = false;
@@ -111,9 +145,7 @@ export function useMic(onResult: (text: string) => void) {
     rec.maxAlternatives = 1;
 
     rec.onresult = (e: unknown) => {
-      const ev = e as {
-        results: ArrayLike<ArrayLike<{ transcript: string }>>;
-      };
+      const ev = e as { results: ArrayLike<ArrayLike<{ transcript: string }>> };
       const text = ev.results?.[0]?.[0]?.transcript ?? "";
       if (text) cbRef.current(text);
     };
@@ -122,7 +154,10 @@ export function useMic(onResult: (text: string) => void) {
       if (ev.error !== "aborted") setError(ev.error ?? "error");
       setListening(false);
     };
-    rec.onend = () => setListening(false);
+    rec.onend = () => {
+      recRef.current = null;
+      setListening(false);
+    };
 
     recRef.current = rec;
     try {
@@ -133,9 +168,90 @@ export function useMic(onResult: (text: string) => void) {
     }
   }, []);
 
-  useEffect(() => () => recRef.current?.abort(), []);
+  /* ---- path B: record and transcribe server-side (everyone else) ---- */
+  const startRecorder = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
-  return { listening, start, stop, error, supported: micAvailable() };
+      const mimeType = pickRecordingType();
+      const rec = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      chunksRef.current = [];
+
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      rec.onstop = async () => {
+        releaseStream();
+        const blob = new Blob(chunksRef.current, {
+          type: rec.mimeType || "audio/webm",
+        });
+        chunksRef.current = [];
+        // a tap rather than a hold — nothing worth sending
+        if (blob.size < 1200) return;
+
+        setTranscribing(true);
+        try {
+          const res = await fetch("/api/transcribe", {
+            method: "POST",
+            headers: { "content-type": blob.type },
+            body: blob,
+          });
+          const data = (await res.json()) as { text?: string; error?: string };
+          if (!res.ok) throw new Error(data.error ?? "Could not transcribe.");
+          if (data.text) cbRef.current(data.text);
+          else setError("Didn't catch that — try again, a little louder.");
+        } catch (e) {
+          setError(
+            e instanceof Error ? e.message : "Could not transcribe that.",
+          );
+        } finally {
+          setTranscribing(false);
+        }
+      };
+
+      mediaRef.current = rec;
+      rec.start();
+      setListening(true);
+    } catch {
+      releaseStream();
+      setError("no-mic-permission");
+      setListening(false);
+    }
+  }, [releaseStream]);
+
+  const start = useCallback(() => {
+    setError(null);
+    const Ctor = getRecognitionCtor();
+    if (Ctor) {
+      startNative(Ctor);
+      return;
+    }
+    if (recorderMicAvailable()) {
+      void startRecorder();
+      return;
+    }
+    setError("unsupported");
+  }, [startNative, startRecorder]);
+
+  useEffect(
+    () => () => {
+      recRef.current?.abort();
+      if (mediaRef.current?.state === "recording") mediaRef.current.stop();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    },
+    [],
+  );
+
+  return {
+    listening,
+    transcribing,
+    start,
+    stop,
+    error,
+    supported: micAvailable(),
+  };
 }
 
 /* ------------------------------------------------------------------ */
