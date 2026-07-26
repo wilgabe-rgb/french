@@ -44,15 +44,25 @@ export async function POST(req: Request) {
     // outright (WAV among them). Say so plainly — it is the one failure here
     // that depends on which browser the learner happens to be using. The
     // detail lives in responseBody, not in the error message ("Bad Request").
-    if (/audio format|file header/i.test(errorDetail(err))) {
-      return Response.json(
-        {
-          error: `This browser records audio as ${contentType}, which the transcriber can't read. Type your answer instead.`,
-        },
-        { status: 415 },
+    // Account-level failures need the learner to do something different from a
+    // format failure, so those keep their specific message. Everything else
+    // that reaches here means we could not turn this recording into text, and
+    // the only useful thing to say is which container it was and to type.
+    const detail = errorDetail(err);
+    const accountProblem =
+      /api key|unauthor|401|credential|credit|billing|payment|quota|rate limit|429/i.test(
+        detail,
       );
+
+    if (accountProblem) {
+      return Response.json({ error: aiErrorMessage(err) }, { status: 502 });
     }
 
-    return Response.json({ error: aiErrorMessage(err) }, { status: 502 });
+    return Response.json(
+      {
+        error: `Couldn't read the audio this browser produced (${contentType}). Type your answer instead.`,
+      },
+      { status: 415 },
+    );
   }
 }
