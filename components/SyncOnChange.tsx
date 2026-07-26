@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { syncConfigured } from "@/lib/insforge";
-import { loadProgress } from "@/lib/progress";
-import { currentUserId, pushProgress } from "@/lib/sync";
+import { loadProgress, saveProgress } from "@/lib/progress";
+import { currentUserId, syncProgress } from "@/lib/sync";
 
 /**
  * Pushes progress to the account a few seconds after it stops changing.
@@ -17,6 +17,9 @@ import { currentUserId, pushProgress } from "@/lib/sync";
 export function SyncOnChange({ delayMs = 4000 }: { delayMs?: number }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlight = useRef(false);
+  // adopting the merge saves locally, which re-fires the very event we listen
+  // for — without this the sync would retrigger itself forever
+  const selfWrite = useRef(false);
 
   useEffect(() => {
     if (!syncConfigured) return;
@@ -25,7 +28,13 @@ export function SyncOnChange({ delayMs = 4000 }: { delayMs?: number }) {
       if (inFlight.current) return;
       inFlight.current = true;
       try {
-        if (await currentUserId()) await pushProgress(loadProgress());
+        if (!(await currentUserId())) return;
+        const merged = await syncProgress(loadProgress());
+        // adopting the merge is how a second device's work shows up here.
+        // dispatch is synchronous, so the flag only spans our own write.
+        selfWrite.current = true;
+        saveProgress(merged);
+        selfWrite.current = false;
       } catch {
         // keep quiet — see note above
       } finally {
@@ -34,6 +43,7 @@ export function SyncOnChange({ delayMs = 4000 }: { delayMs?: number }) {
     };
 
     const onChange = () => {
+      if (selfWrite.current) return;
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => void flush(), delayMs);
     };
