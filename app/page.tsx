@@ -14,28 +14,28 @@ export default function Home() {
   const warmup = ready ? warmUpDeck(progress, dayNumber, 8).length : 0;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
       <section>
         <p className="text-sm text-muted">
           {s.daysDone === 0
             ? "Start here"
             : `Day ${dayNumber} of ${TOTAL_DAYS} · ${s.daysDone} done`}
         </p>
-        <h1 className="mt-1 text-4xl font-semibold tracking-tight">
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
           {day.title}
         </h1>
-        <p className="mt-3 text-lg text-muted">{day.goal}</p>
+        <p className="mt-3 text-base text-muted sm:text-lg">{day.goal}</p>
 
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Link
             href={`/day/${dayNumber}`}
-            className="rounded-xl bg-accent px-6 py-3 text-sm font-medium text-bg transition hover:opacity-90"
+            className="grid h-13 place-items-center rounded-xl bg-accent px-6 text-sm font-medium text-bg transition hover:opacity-90"
           >
             Start today — 20 minutes
           </Link>
           <Link
             href="/practice"
-            className="rounded-xl border border-line px-6 py-3 text-sm transition hover:border-accent hover:text-accent"
+            className="grid h-13 place-items-center rounded-xl border border-line px-6 text-sm transition hover:border-accent hover:text-accent"
           >
             Just talk to someone
           </Link>
@@ -48,7 +48,7 @@ export default function Home() {
         )}
       </section>
 
-      <section className="mt-10 grid gap-3 sm:grid-cols-3">
+      <section className="mt-8 grid grid-cols-3 gap-2 sm:mt-10 sm:gap-3">
         <Stat
           label="Solid"
           value={s.known}
@@ -58,7 +58,7 @@ export default function Home() {
         <Stat label="Minutes" value={s.minutes} hint="spent speaking so far" />
       </section>
 
-      <section className="mt-10 rounded-2xl border border-line bg-panel p-5">
+      <section className="mt-8 rounded-2xl border border-line bg-panel p-4 sm:mt-10 sm:p-5">
         <h2 className="font-medium">What today looks like</h2>
         <ol className="mt-4 space-y-3 text-sm">
           <Step
@@ -94,7 +94,7 @@ export default function Home() {
       </section>
 
       {s.lastTest && (
-        <section className="mt-6 rounded-2xl border border-line bg-panel p-5">
+        <section className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-5">
           <div className="flex items-baseline justify-between">
             <h2 className="font-medium">Last check — week {s.lastTest.week}</h2>
             <span className="text-2xl font-semibold tabular-nums">
@@ -129,10 +129,11 @@ function Stat({
   hint: string;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-panel p-4">
-      <p className="text-3xl font-semibold tabular-nums">{value}</p>
+    <div className="rounded-2xl border border-line bg-panel p-3 sm:p-4">
+      <p className="text-2xl font-semibold tabular-nums sm:text-3xl">{value}</p>
       <p className="mt-1 text-sm font-medium">{label}</p>
-      <p className="text-xs text-muted">{hint}</p>
+      {/* three columns on a phone leaves no room for a sentence under each */}
+      <p className="hidden text-xs text-muted sm:block">{hint}</p>
     </div>
   );
 }

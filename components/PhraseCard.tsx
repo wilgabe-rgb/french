@@ -13,10 +13,10 @@ export function PhraseCard({
   voiceURI?: string;
 }) {
   return (
-    <article className="rounded-2xl border border-line bg-panel p-5">
-      <div className="flex items-start justify-between gap-3">
+    <article className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="fr text-2xl leading-tight">{item.fr}</h3>
+          <h3 className="fr text-xl leading-tight sm:text-2xl">{item.fr}</h3>
           <p className="mt-1 text-sm text-muted">{item.en}</p>
         </div>
         <Speaker text={item.fr} rate={rate} voiceURI={voiceURI} slow />
@@ -26,7 +26,7 @@ export function PhraseCard({
       {item.tip && <p className="mt-1 text-xs text-muted">{item.tip}</p>}
 
       <div className="mt-4 border-t border-line pt-3">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="fr text-base">{item.ex}</p>
             <p className="mt-0.5 text-sm text-muted">{item.exEn}</p>

@@ -191,16 +191,18 @@ export function TestRunner({
   const q = questions[i];
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 py-8">
+    <div className="mx-auto w-full max-w-2xl px-4 py-6 sm:py-8">
       <nav className="text-sm">
-        <Link href="/plan" className="text-muted hover:text-ink">
+        <Link href="/plan" className="-ml-1 px-1 py-2 text-muted hover:text-ink">
           ← All 90 days
         </Link>
       </nav>
 
-      <header className="mt-4">
+      <header className="mt-3">
         <p className="text-sm text-muted">Week {week} check</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+          {title}
+        </h1>
         <p className="mt-2 text-muted">{outcome}</p>
       </header>
 
@@ -211,7 +213,7 @@ export function TestRunner({
       )}
 
       {phase === "intro" && (
-        <section className="mt-8 rounded-2xl border border-line bg-panel p-6">
+        <section className="mt-8 rounded-2xl border border-line bg-panel p-5 sm:p-6">
           <h2 className="font-medium">Eight questions, spoken.</h2>
           <ul className="mt-3 space-y-1.5 text-sm text-muted">
             <li>· Four recall prompts — English in, French out.</li>
@@ -227,7 +229,7 @@ export function TestRunner({
             type="button"
             onClick={begin}
             disabled={!ready}
-            className="mt-6 w-full rounded-xl bg-accent px-4 py-3 text-sm font-medium text-bg transition hover:opacity-90"
+            className="mt-6 h-13 w-full rounded-xl bg-accent px-4 text-sm font-medium text-bg transition hover:opacity-90"
           >
             Start the test
           </button>
@@ -241,7 +243,7 @@ export function TestRunner({
       )}
 
       {phase === "asking" && q && (
-        <section className="mt-8 rounded-2xl border border-line bg-panel p-6">
+        <section className="mt-8 rounded-2xl border border-line bg-panel p-5 sm:p-6">
           <div className="flex items-baseline justify-between">
             <p className="text-xs uppercase tracking-wide text-accent">
               {KIND_LABEL[q.kind]}
@@ -251,7 +253,7 @@ export function TestRunner({
             </span>
           </div>
 
-          <p className="mt-3 text-xl leading-snug">{q.prompt}</p>
+          <p className="mt-3 text-lg leading-snug sm:text-xl">{q.prompt}</p>
 
           {q.kind === "listen" && q.audio && (
             <div className="mt-4 flex items-center gap-2">
@@ -275,7 +277,7 @@ export function TestRunner({
           <button
             type="button"
             onClick={() => submitAnswer("")}
-            className="mt-4 text-sm text-muted underline underline-offset-4 hover:text-ink"
+            className="-ml-1 mt-3 px-1 py-2 text-sm text-muted underline underline-offset-4 hover:text-ink"
           >
             Skip — I don&apos;t know this one
           </button>
@@ -288,7 +290,7 @@ export function TestRunner({
 
       {phase === "result" && grade && (
         <section className="mt-8 space-y-6">
-          <div className="rounded-2xl border border-line bg-panel p-6">
+          <div className="rounded-2xl border border-line bg-panel p-5 sm:p-6">
             <p className="text-sm text-muted">Week {week} score</p>
             <p className="mt-1 text-5xl font-semibold tabular-nums">
               {grade.score}
@@ -298,7 +300,7 @@ export function TestRunner({
           </div>
 
           {grade.focus.length > 0 && (
-            <div className="rounded-2xl border border-line bg-panel p-6">
+            <div className="rounded-2xl border border-line bg-panel p-5 sm:p-6">
               <h2 className="font-medium">What changes next week</h2>
               <ul className="mt-3 space-y-2 text-sm text-muted">
                 {grade.focus.map((f, n) => (
@@ -320,7 +322,7 @@ export function TestRunner({
             </div>
           )}
 
-          <div className="rounded-2xl border border-line bg-panel p-6">
+          <div className="rounded-2xl border border-line bg-panel p-5 sm:p-6">
             <h2 className="font-medium">Question by question</h2>
             <ol className="mt-4 space-y-4">
               {grade.results.map((r, n) => {
@@ -367,13 +369,13 @@ export function TestRunner({
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link
               href={`/day/${Math.min(90, day + 1)}`}
-              className="flex-1 rounded-xl bg-accent px-5 py-3 text-center text-sm font-medium text-bg transition hover:opacity-90"
+              className="grid h-13 flex-1 place-items-center rounded-xl bg-accent px-5 text-sm font-medium text-bg transition hover:opacity-90"
             >
               Carry on to day {Math.min(90, day + 1)}
             </Link>
             <Link
               href="/progress"
-              className="flex-1 rounded-xl border border-line px-5 py-3 text-center text-sm transition hover:border-accent hover:text-accent"
+              className="grid h-13 flex-1 place-items-center rounded-xl border border-line px-5 text-sm transition hover:border-accent hover:text-accent"
             >
               See your weak spots
             </Link>

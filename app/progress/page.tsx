@@ -37,9 +37,9 @@ export default function ProgressPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Where you actually are
         </h1>
         <p className="mt-2 text-muted">
@@ -52,7 +52,7 @@ export default function ProgressPage() {
         <AccountBar />
       </div>
 
-      <section className="mt-6 grid gap-3 sm:grid-cols-4">
+      <section className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <Stat value={s.daysDone} label="days done" />
         <Stat value={s.known} label="solid" />
         <Stat value={s.learning} label="getting there" />
@@ -60,7 +60,7 @@ export default function ProgressPage() {
       </section>
 
       {categories.length > 0 && (
-        <section className="mt-8 rounded-2xl border border-line bg-panel p-5">
+        <section className="mt-8 rounded-2xl border border-line bg-panel p-4 sm:p-5">
           <h2 className="font-medium">Your recurring mistakes</h2>
           <p className="mt-1 text-sm text-muted">
             Patterns across your drills, conversations and tests.
@@ -79,7 +79,7 @@ export default function ProgressPage() {
       )}
 
       {weak.length > 0 && (
-        <section className="mt-6 rounded-2xl border border-line bg-panel p-5">
+        <section className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-5">
           <h2 className="font-medium">Coming back in your warm-ups</h2>
           <ul className="mt-3 divide-y divide-line">
             {weak.map((item) => {
@@ -111,7 +111,7 @@ export default function ProgressPage() {
       )}
 
       {recent.length > 0 && (
-        <section className="mt-6 rounded-2xl border border-line bg-panel p-5">
+        <section className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-5">
           <h2 className="font-medium">Recent corrections</h2>
           <ul className="mt-3 space-y-3">
             {recent.map((m, i) => (
@@ -132,28 +132,34 @@ export default function ProgressPage() {
       )}
 
       {progress.tests.length > 0 && (
-        <section className="mt-6 rounded-2xl border border-line bg-panel p-5">
+        <section className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-5">
           <h2 className="font-medium">Weekly checks</h2>
           <ul className="mt-3 space-y-3">
             {progress.tests
               .slice()
               .sort((a, b) => a.week - b.week)
               .map((t) => (
-                <li key={t.week} className="flex gap-3">
-                  <span className="w-16 shrink-0 text-sm text-muted">
-                    Week {t.week}
+                // the summary is a sentence; on a phone it gets its own line
+                // rather than a 150px column beside the score
+                <li key={t.week} className="sm:flex sm:gap-3">
+                  <span className="flex items-baseline gap-3 sm:contents">
+                    <span className="w-16 shrink-0 text-sm text-muted">
+                      Week {t.week}
+                    </span>
+                    <span className="font-medium tabular-nums sm:w-12 sm:shrink-0">
+                      {t.score}
+                    </span>
                   </span>
-                  <span className="w-12 shrink-0 font-medium tabular-nums">
-                    {t.score}
+                  <span className="mt-0.5 block text-sm text-muted sm:mt-0">
+                    {t.summary}
                   </span>
-                  <span className="text-sm text-muted">{t.summary}</span>
                 </li>
               ))}
           </ul>
         </section>
       )}
 
-      <section className="mt-6 rounded-2xl border border-line bg-panel p-5">
+      <section className="mt-6 rounded-2xl border border-line bg-panel p-4 sm:p-5">
         <h2 className="font-medium">Audio</h2>
         <label className="mt-4 block text-sm">
           Speed
@@ -169,7 +175,7 @@ export default function ProgressPage() {
                 settings: { ...p.settings, rate: Number(e.target.value) },
               }))
             }
-            className="mt-2 block w-full accent-[var(--accent)]"
+            className="mt-2 block h-6 w-full accent-[var(--accent)]"
           />
           <span className="text-xs text-muted tabular-nums">
             {progress.settings.rate.toFixed(2)}×
@@ -187,7 +193,7 @@ export default function ProgressPage() {
                   settings: { ...p.settings, voiceURI: e.target.value },
                 }))
               }
-              className="mt-2 block w-full rounded-xl border border-line bg-bg px-3 py-2"
+              className="mt-2 block h-11 w-full rounded-xl border border-line bg-bg px-3"
             >
               {voices.map((v) => (
                 <option key={v.voiceURI} value={v.voiceURI}>
@@ -208,14 +214,14 @@ export default function ProgressPage() {
         </div>
       </section>
 
-      <section className="mt-6 flex items-center justify-between gap-3 text-sm">
-        <Link href="/" className="text-accent hover:opacity-80">
+      <section className="mt-6 mb-2 flex items-center justify-between gap-3 text-sm">
+        <Link href="/" className="-ml-1 px-1 py-2 text-accent hover:opacity-80">
           ← Back to today
         </Link>
         <button
           type="button"
           onClick={reset}
-          className="text-muted underline underline-offset-4 hover:text-bad"
+          className="-mr-1 px-1 py-2 text-muted underline underline-offset-4 hover:text-bad"
         >
           Reset all progress
         </button>
@@ -226,8 +232,8 @@ export default function ProgressPage() {
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-panel p-4">
-      <p className="text-3xl font-semibold tabular-nums">{value}</p>
+    <div className="rounded-2xl border border-line bg-panel p-3 sm:p-4">
+      <p className="text-2xl font-semibold tabular-nums sm:text-3xl">{value}</p>
       <p className="mt-1 text-sm text-muted">{label}</p>
     </div>
   );

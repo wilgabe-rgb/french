@@ -38,15 +38,15 @@ export default function PracticePage() {
 
   if (active) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-8">
+      <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-8">
         <button
           type="button"
           onClick={() => setActive(null)}
-          className="text-sm text-muted hover:text-ink"
+          className="-ml-1 px-1 py-2 text-sm text-muted hover:text-ink"
         >
           ← All scenarios
         </button>
-        <div className="mt-6">
+        <div className="mt-4">
           <Roleplay
             key={active.id}
             scenario={active}
@@ -62,9 +62,9 @@ export default function PracticePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Talk to someone
         </h1>
         <p className="mt-2 text-muted">
@@ -77,7 +77,11 @@ export default function PracticePage() {
         {LEVELS.map(({ level, label, hint }) => (
           <section key={level}>
             <h2 className="font-medium">
-              {label} <span className="text-muted">· {hint}</span>
+              {label}{" "}
+              <span className="block text-sm text-muted sm:inline sm:text-base">
+                <span className="hidden sm:inline">· </span>
+                {hint}
+              </span>
             </h2>
             <ul className="mt-3 grid gap-3 sm:grid-cols-2">
               {SCENARIOS.filter((s) => s.level === level).map((s) => (

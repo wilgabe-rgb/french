@@ -11,6 +11,13 @@ import {
   setActiveAccount,
 } from "./progress";
 import { syncProgress } from "./sync";
+import {
+  isNewVisit,
+  keepVisitAlive,
+  markVisit,
+  setStaySignedIn,
+  staysSignedIn,
+} from "./stay";
 
 /**
  * Joins the three things that have to move together when someone signs in:
@@ -29,7 +36,14 @@ const hasWork = (p: Progress) =>
   p.mistakes.length > 0 ||
   p.tests.length > 0;
 
-export async function signIn(username: string): Promise<Account> {
+export async function signIn(
+  username: string,
+  stay = staysSignedIn(),
+): Promise<Account> {
+  // recorded before the round trip, so a sign-in that fails half way still
+  // leaves the device set the way they asked
+  setStaySignedIn(stay);
+
   const account = await enterAs(username);
   setActiveAccount(account.id);
 
@@ -79,5 +93,44 @@ export async function restoreSession(): Promise<Account | null> {
   return account;
 }
 
-export { GUEST_ID };
+let settling: Promise<Account | null> | null = null;
+
+/**
+ * Who is signed in for this page load — worked out once, and shared.
+ *
+ * Every screen takes its first answer from here rather than asking for itself.
+ * Two reasons, both learned the hard way: a read that leaves before a lapsed
+ * session is ended can land after it and paint the departed learner's name back
+ * on a shared device; and simultaneous reads on a cold load each try to renew
+ * the same token, where the second one loses and reports nobody there.
+ */
+export function sessionSettled(): Promise<Account | null> {
+  settling ??= settle();
+  return settling;
+}
+
+/**
+ * Read the session, honouring "don't stay signed in": if the browser has been
+ * closed since that choice was made, the session ends here instead.
+ *
+ * The two synchronous lines come first on purpose — the visit has to be marked
+ * before anything can await, or a second look this same load would judge the
+ * visit new all over again.
+ */
+async function settle(): Promise<Account | null> {
+  const lapsed = !staysSignedIn() && isNewVisit();
+  markVisit();
+
+  const account = await currentAccount();
+  if (account && lapsed) {
+    await signOut();
+    return null;
+  }
+
+  setActiveAccount(account ? account.id : null);
+  return account;
+}
+
+export { GUEST_ID, keepVisitAlive, setStaySignedIn, staysSignedIn };
+
 export type { Account };

@@ -127,9 +127,9 @@ export function DayRunner({
   const over = seconds > 20 * 60;
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-8">
       <nav className="flex items-center justify-between text-sm">
-        <Link href="/plan" className="text-muted hover:text-ink">
+        <Link href="/plan" className="-ml-1 px-1 py-2 text-muted hover:text-ink">
           ← All 90 days
         </Link>
         <span
@@ -140,11 +140,11 @@ export function DayRunner({
         </span>
       </nav>
 
-      <header className="mt-4">
+      <header className="mt-3">
         <p className="text-sm text-muted">
           Day {day.day} of {TOTAL_DAYS} · Week {day.week}
         </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
           {day.title}
         </h1>
         <p className="mt-2 text-muted">{day.goal}</p>
@@ -156,21 +156,23 @@ export function DayRunner({
           const active = block === b;
           const done = visited.includes(b) || block === "done";
           return (
-            <li key={b} className="flex-1">
+            <li key={b} className="min-w-0 flex-1">
               <div
                 className={`h-1.5 rounded-full ${
                   done ? "bg-good" : active ? "bg-accent" : "bg-line"
                 } ${skipped ? "opacity-30" : ""}`}
               />
-              <p className="mt-1 text-[11px] capitalize text-muted">
-                {b} · {BLOCK_MINUTES[b]}m
+              {/* a quarter of a phone's width won't hold "roleplay · 5m" */}
+              <p className="mt-1 truncate text-[11px] capitalize text-muted">
+                {b}
+                <span className="hidden sm:inline"> · {BLOCK_MINUTES[b]}m</span>
               </p>
             </li>
           );
         })}
       </ol>
 
-      <div className="mt-8 space-y-6">
+      <div className="mt-6 space-y-6 sm:mt-8">
         {block === "warmup" && (
           <Drill
             items={warmup}
@@ -195,7 +197,7 @@ export function DayRunner({
                     voiceURI,
                   })
                 }
-                className="text-sm text-accent hover:opacity-80"
+                className="-mr-1 shrink-0 px-1 py-2 text-sm text-accent hover:opacity-80"
               >
                 Play all
               </button>
@@ -215,7 +217,7 @@ export function DayRunner({
             <button
               type="button"
               onClick={() => advance("learn", "drill")}
-              className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-medium text-bg transition hover:opacity-90"
+              className="h-13 w-full rounded-xl bg-accent px-4 text-sm font-medium text-bg transition hover:opacity-90"
             >
               I&apos;ve said them all — start the drill
             </button>
@@ -254,7 +256,7 @@ export function DayRunner({
             <button
               type="button"
               onClick={finish}
-              className="w-full rounded-xl border border-line px-4 py-3 text-sm font-medium transition hover:border-accent hover:text-accent"
+              className="h-13 w-full rounded-xl border border-line px-4 text-sm font-medium transition hover:border-accent hover:text-accent"
             >
               Finish day {day.day}
             </button>
@@ -262,7 +264,7 @@ export function DayRunner({
         )}
 
         {block === "done" && (
-          <section className="rounded-2xl border border-line bg-panel p-6 text-center">
+          <section className="rounded-2xl border border-line bg-panel p-5 text-center sm:p-6">
             <h2 className="text-xl font-semibold">Day {day.day} done.</h2>
             <p className="mt-2 text-sm text-muted">
               {mm}:{ss} today. Anything you got wrong will come back in a
@@ -273,7 +275,7 @@ export function DayRunner({
               {isTestDay && (
                 <Link
                   href={`/test/${day.week}`}
-                  className="rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-bg transition hover:opacity-90"
+                  className="grid h-12 place-items-center rounded-xl bg-accent px-5 text-sm font-medium text-bg transition hover:opacity-90"
                 >
                   Take the week {day.week} test
                 </Link>
@@ -281,14 +283,14 @@ export function DayRunner({
               {day.day < TOTAL_DAYS && (
                 <Link
                   href={`/day/${day.day + 1}`}
-                  className="rounded-xl border border-line px-5 py-2.5 text-sm transition hover:border-accent hover:text-accent"
+                  className="grid h-12 place-items-center rounded-xl border border-line px-5 text-sm transition hover:border-accent hover:text-accent"
                 >
                   Day {day.day + 1} →
                 </Link>
               )}
               <Link
                 href="/"
-                className="rounded-xl border border-line px-5 py-2.5 text-sm transition hover:border-accent hover:text-accent"
+                className="grid h-12 place-items-center rounded-xl border border-line px-5 text-sm transition hover:border-accent hover:text-accent"
               >
                 Back to today
               </Link>
@@ -298,7 +300,7 @@ export function DayRunner({
       </div>
 
       {block !== "done" && (
-        <footer className="mt-10 rounded-2xl border border-line bg-panel p-4">
+        <footer className="mt-8 rounded-2xl border border-line bg-panel p-4 sm:mt-10">
           <h3 className="text-sm font-medium">Today&apos;s scenario</h3>
           <p className="mt-1 text-sm text-muted">
             {scenario.title} — {scenario.setup}

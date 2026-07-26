@@ -31,7 +31,12 @@ export function SayBox({
   );
 
   useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
+    // On a phone, focusing throws up the keyboard and buries the very prompt
+    // you're meant to be answering. Touch users open it themselves, or — the
+    // point of the exercise — just talk.
+    if (!autoFocus) return;
+    if (!window.matchMedia?.("(pointer: fine)").matches) return;
+    inputRef.current?.focus();
   }, [autoFocus]);
 
   const send = () => {
@@ -43,28 +48,13 @@ export function SayBox({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        {supported && (
-          <button
-            type="button"
-            onClick={listening ? stop : start}
-            disabled={disabled || transcribing}
-            aria-pressed={listening}
-            aria-label={listening ? "Stop recording" : "Start speaking"}
-            className={`grid h-11 w-11 shrink-0 place-items-center rounded-full border transition ${
-              listening
-                ? "listening border-bad bg-bad-soft text-bad"
-                : "border-line text-muted hover:border-accent hover:text-accent"
-            }`}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"
-              />
-            </svg>
-          </button>
-        )}
+      {/*
+       * Three controls will not sit side by side on a 360px screen without
+       * squeezing the field down to nothing, so on a phone the field takes the
+       * full width and the mic — the button you actually want — gets a whole
+       * row and a name. `sm:contents` folds it all back into one row further up.
+       */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
           ref={inputRef}
           value={text}
@@ -83,17 +73,45 @@ export function SayBox({
           lang="fr"
           autoComplete="off"
           autoCorrect="off"
+          autoCapitalize="sentences"
           spellCheck={false}
-          className="fr min-w-0 flex-1 rounded-xl border border-line bg-panel px-4 py-3 text-lg outline-none transition placeholder:font-sans placeholder:text-sm placeholder:text-muted focus:border-accent"
+          enterKeyHint="send"
+          className="fr w-full min-w-0 rounded-xl border border-line bg-panel px-4 py-3 text-lg outline-none transition placeholder:font-sans placeholder:text-sm placeholder:text-muted focus:border-accent sm:order-2 sm:flex-1"
         />
-        <button
-          type="button"
-          onClick={send}
-          disabled={disabled || !text.trim()}
-          className="shrink-0 rounded-xl bg-accent px-4 py-3 text-sm font-medium text-bg transition hover:opacity-90"
-        >
-          Send
-        </button>
+        <div className="flex gap-2 sm:contents">
+          {supported && (
+            <button
+              type="button"
+              onClick={listening ? stop : start}
+              disabled={disabled || transcribing}
+              aria-pressed={listening}
+              aria-label={listening ? "Stop recording" : "Start speaking"}
+              className={`flex h-13 flex-1 items-center justify-center gap-2 rounded-xl border text-sm font-medium transition sm:order-1 sm:h-11 sm:w-11 sm:flex-none sm:rounded-full ${
+                listening
+                  ? "listening border-bad bg-bad-soft text-bad"
+                  : "border-line text-muted hover:border-accent hover:text-accent"
+              }`}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"
+                />
+              </svg>
+              <span className="sm:hidden">
+                {listening ? "Stop" : transcribing ? "Working…" : "Speak"}
+              </span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={send}
+            disabled={disabled || !text.trim()}
+            className="h-13 shrink-0 rounded-xl bg-accent px-6 text-sm font-medium text-bg transition hover:opacity-90 sm:order-3 sm:h-auto sm:px-4 sm:py-3"
+          >
+            Send
+          </button>
+        </div>
       </div>
       {!supported && (
         <p className="text-xs text-muted">

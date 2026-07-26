@@ -9,9 +9,9 @@ export default function PlanPage() {
   const { progress } = useProgress();
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
       <header>
-        <h1 className="text-3xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           The 90 days
         </h1>
         <p className="mt-2 text-muted">
@@ -30,7 +30,7 @@ export default function PlanPage() {
               </h2>
               <Link
                 href={`/test/${w.week}`}
-                className="shrink-0 text-xs text-muted hover:text-accent"
+                className="-mr-1 shrink-0 px-1 py-1.5 text-xs text-muted hover:text-accent"
               >
                 test →
               </Link>
@@ -45,7 +45,7 @@ export default function PlanPage() {
                   <li key={d.day}>
                     <Link
                       href={`/day/${d.day}`}
-                      className={`flex items-center gap-3 px-4 py-3 transition hover:bg-accent-soft ${
+                      className={`flex min-h-14 items-center gap-3 px-4 py-3 transition hover:bg-accent-soft active:bg-accent-soft ${
                         current ? "bg-accent-soft" : ""
                       }`}
                     >

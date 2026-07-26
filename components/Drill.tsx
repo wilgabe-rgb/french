@@ -113,30 +113,32 @@ export function Drill({
   };
 
   return (
-    <section className="rounded-2xl border border-line bg-panel p-5">
-      <header className="flex items-baseline justify-between">
-        <div>
+    <section className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
+      <header className="flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
           <h2 className="font-medium">{title}</h2>
           {subtitle && <p className="text-sm text-muted">{subtitle}</p>}
         </div>
-        <span className="text-sm text-muted tabular-nums">{progress}</span>
+        <span className="shrink-0 text-sm text-muted tabular-nums">
+          {progress}
+        </span>
       </header>
 
       <div className="mt-6">
         <p className="text-xs uppercase tracking-wide text-muted">
           Say this in French
         </p>
-        <p className="mt-1 text-2xl leading-snug">{item.en}</p>
+        <p className="mt-1 text-xl leading-snug sm:text-2xl">{item.en}</p>
       </div>
 
       {!verdict && !revealed && (
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 space-y-2">
           <SayBox onSubmit={submit} disabled={checking} autoFocus />
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={skip}
-              className="text-sm text-muted underline underline-offset-4 hover:text-ink"
+              className="-ml-1 px-1 py-2 text-sm text-muted underline underline-offset-4 hover:text-ink"
             >
               I don&apos;t know
             </button>
@@ -164,20 +166,20 @@ export function Drill({
             )}
           </div>
 
-          <div className="flex items-start justify-between gap-3 rounded-xl border border-line p-4">
-            <div className="min-w-0">
-              <p className="fr text-xl">{item.fr}</p>
-              <p className="say mt-1 text-accent">{item.say}</p>
-              <p className="fr mt-3 text-sm">{item.ex}</p>
-              <p className="text-xs text-muted">{item.exEn}</p>
+          <div className="rounded-xl border border-line p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="fr min-w-0 text-xl">{item.fr}</p>
+              <Speaker text={item.fr} rate={rate} voiceURI={voiceURI} slow />
             </div>
-            <Speaker text={item.fr} rate={rate} voiceURI={voiceURI} slow />
+            <p className="say mt-1 text-accent">{item.say}</p>
+            <p className="fr mt-3 text-sm">{item.ex}</p>
+            <p className="text-xs text-muted">{item.exEn}</p>
           </div>
 
           <button
             type="button"
             onClick={next}
-            className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-medium text-bg transition hover:opacity-90"
+            className="h-13 w-full rounded-xl bg-accent px-4 text-sm font-medium text-bg transition hover:opacity-90"
           >
             {i + 1 >= items.length ? "Finish this block" : "Next"}
           </button>

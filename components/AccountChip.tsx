@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { currentAccount, type Account } from "@/lib/account";
 import { syncConfigured } from "@/lib/insforge";
+import { sessionSettled } from "@/lib/session";
 
 /**
  * Who is on this device, visible from every page. On a shared laptop the
@@ -20,16 +21,23 @@ export function AccountChip() {
       return;
     }
     let alive = true;
-    // currentAccount only reads. Using restoreSession here would write the
-    // active account back and re-announce the change this handler listens for.
-    const read = async () => {
-      const acct = await currentAccount();
-      if (alive) {
+    // reads can overlap — a slow one must not repaint over a newer answer
+    let latest = 0;
+    const show = async (look: Promise<Account | null>) => {
+      const ticket = ++latest;
+      const acct = await look;
+      if (alive && ticket === latest) {
         setAccount(acct);
         setChecked(true);
       }
     };
-    void read();
+
+    // The first answer comes from the shared read, so this and the sign-in box
+    // agree and only ask once between them. After that currentAccount only
+    // reads — restoreSession would write the active account back and
+    // re-announce the very change this handler listens for.
+    const read = () => show(currentAccount());
+    void show(sessionSettled());
     window.addEventListener("parlons:account", read);
     return () => {
       alive = false;
@@ -42,8 +50,8 @@ export function AccountChip() {
   return (
     <Link
       href="/progress"
-      className="rounded-full border border-line px-3 py-1 text-xs text-muted transition hover:border-accent hover:text-accent"
-      title={account ? "Signed in — tap to switch learner" : "Tap to sign in"}
+      className="grid h-9 max-w-32 place-items-center truncate rounded-full border border-line px-3 text-xs text-muted transition hover:border-accent hover:text-accent"
+      title={account ? "Signed in — tap to sign out or switch" : "Tap to sign in"}
     >
       {account ? account.username : "Sign in"}
     </Link>

@@ -44,7 +44,10 @@ export function Roleplay({
   const startedRef = useRef(false);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    // scroll the transcript itself rather than scrollIntoView, which drags the
+    // whole page around underneath you on a phone
+    const box = endRef.current?.parentElement;
+    box?.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
   }, [lines, busy]);
 
   const turn = useCallback(
@@ -136,9 +139,13 @@ export function Roleplay({
         <button
           type="button"
           onClick={() => setShowEnglish((v) => !v)}
-          className="shrink-0 rounded-lg border border-line px-2 py-1 text-xs text-muted transition hover:border-accent hover:text-accent"
+          aria-pressed={showEnglish}
+          className="grid h-9 shrink-0 place-items-center rounded-lg border border-line px-2.5 text-xs text-muted transition hover:border-accent hover:text-accent"
         >
-          {showEnglish ? "Hide English" : "Show English"}
+          <span className="sm:hidden">{showEnglish ? "FR only" : "English"}</span>
+          <span className="hidden sm:inline">
+            {showEnglish ? "Hide English" : "Show English"}
+          </span>
         </button>
       </header>
 
@@ -152,18 +159,20 @@ export function Roleplay({
           <button
             type="button"
             onClick={begin}
-            className="mt-4 rounded-xl bg-accent px-5 py-2.5 text-sm font-medium text-bg transition hover:opacity-90"
+            className="mt-4 h-12 w-full rounded-xl bg-accent px-5 text-sm font-medium text-bg transition hover:opacity-90 sm:w-auto"
           >
             Start the conversation
           </button>
         </div>
       ) : (
         <>
-          <div className="max-h-[26rem] space-y-4 overflow-y-auto p-4">
+          <div className="max-h-[50vh] space-y-4 overflow-y-auto overscroll-contain p-4 sm:max-h-[26rem]">
             {lines.map((line, i) =>
               line.role === "partner" ? (
-                <div key={i} className="flex gap-2">
-                  <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-accent-soft px-4 py-3">
+                // play and slow sit under the bubble, not beside it — side by
+                // side they take a third of a phone's width off the French
+                <div key={i} className="flex flex-col items-start gap-1.5">
+                  <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-accent-soft px-4 py-3 sm:max-w-[85%]">
                     <p className="fr text-lg leading-snug">{line.fr}</p>
                     {showEnglish && line.en && (
                       <p className="mt-1 text-sm text-muted">{line.en}</p>
@@ -173,7 +182,7 @@ export function Roleplay({
                 </div>
               ) : (
                 <div key={i} className="flex flex-col items-end gap-1">
-                  <div className="max-w-[85%] rounded-2xl rounded-tr-sm border border-line px-4 py-3">
+                  <div className="max-w-[90%] rounded-2xl rounded-tr-sm border border-line px-4 py-3 sm:max-w-[85%]">
                     <p className="fr text-lg leading-snug">{line.fr}</p>
                   </div>
                   {line.correction && !line.correction.ok && (
@@ -216,14 +225,14 @@ export function Roleplay({
             )}
 
             {done ? (
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-good">
                   Done — you got what you came for.
                 </p>
                 <button
                   type="button"
                   onClick={restart}
-                  className="rounded-lg border border-line px-3 py-1.5 text-sm text-muted transition hover:border-accent hover:text-accent"
+                  className="h-11 shrink-0 rounded-xl border border-line px-4 text-sm text-muted transition hover:border-accent hover:text-accent"
                 >
                   Run it again
                 </button>
