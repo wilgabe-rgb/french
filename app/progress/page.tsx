@@ -13,6 +13,7 @@ import {
 } from "@/lib/progress";
 import { useVoices } from "@/lib/speech";
 import { Speaker } from "@/components/Speaker";
+import { AccountBar } from "@/components/AccountBar";
 
 export default function ProgressPage() {
   const { progress, update, ready } = useProgress();
@@ -147,6 +148,10 @@ export default function ProgressPage() {
           </ul>
         </section>
       )}
+
+      <div className="mt-6">
+        <AccountBar />
+      </div>
 
       <section className="mt-6 rounded-2xl border border-line bg-panel p-5">
         <h2 className="font-medium">Audio</h2>

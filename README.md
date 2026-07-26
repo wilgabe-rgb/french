@@ -38,6 +38,28 @@ change `MODEL` in `lib/ai.ts` and install the matching `@ai-sdk/*` package.
 Everything except the AI routes works offline — the curriculum, audio and
 progress tracking are all local.
 
+## Syncing across devices
+
+Optional. Signed out, progress lives in `localStorage` and never leaves the
+device. Sign in on the Progress page and it is mirrored to InsForge, so your
+days, weak spots and test results follow you to a phone.
+
+```
+NEXT_PUBLIC_INSFORGE_URL=https://<project>.us-east.insforge.app
+NEXT_PUBLIC_INSFORGE_ANON_KEY=anon_...
+```
+
+Both are safe in the browser — every table is row-level-security scoped to the
+signed-in user, so the anon key alone reaches nothing. With the variables unset
+the app simply runs local-only; nothing throws.
+
+Local storage stays the source of truth. Writes are pushed a few seconds after
+you stop working, and sign-in reconciles both sides rather than overwriting:
+attempt counts take the higher value, the most recent answer decides an item's
+review box, and mistakes and test results are unioned on their natural keys. A
+failed push is silent and retried by the next change — you cannot lose your
+place because the network dropped.
+
 ## Where things live
 
 | Path | What |
