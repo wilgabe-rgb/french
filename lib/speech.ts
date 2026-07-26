@@ -90,12 +90,17 @@ export const recorderMicAvailable = () =>
 export const micAvailable = () =>
   nativeMicAvailable() || recorderMicAvailable();
 
-/** Ordered by preference — the first one the browser can actually produce wins. */
+/**
+ * Ordered by preference — the first one the browser can actually produce wins.
+ * ogg/opus is first because it is the container verified end to end against the
+ * transcription API; webm carries the same codec and Safari only offers mp4.
+ * Note WAV is deliberately absent — the API rejects it outright.
+ */
 const RECORDING_TYPES = [
+  "audio/ogg;codecs=opus",
   "audio/webm;codecs=opus",
   "audio/webm",
   "audio/mp4",
-  "audio/ogg;codecs=opus",
 ];
 
 function pickRecordingType(): string | undefined {
