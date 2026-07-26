@@ -48,7 +48,11 @@ export default function ProgressPage() {
         </p>
       </header>
 
-      <section className="mt-8 grid gap-3 sm:grid-cols-4">
+      <div className="mt-8">
+        <AccountBar />
+      </div>
+
+      <section className="mt-6 grid gap-3 sm:grid-cols-4">
         <Stat value={s.daysDone} label="days done" />
         <Stat value={s.known} label="solid" />
         <Stat value={s.learning} label="getting there" />
@@ -148,10 +152,6 @@ export default function ProgressPage() {
           </ul>
         </section>
       )}
-
-      <div className="mt-6">
-        <AccountBar />
-      </div>
 
       <section className="mt-6 rounded-2xl border border-line bg-panel p-5">
         <h2 className="font-medium">Audio</h2>
